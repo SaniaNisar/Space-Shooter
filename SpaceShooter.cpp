@@ -1,202 +1,267 @@
 #include <iostream>
-#include <Windows.h>
-#include <conio.h>  // For _getch() and _kbhit()
-#include <ctime>    // For time()
-
+#include <windows.h>
+#include <conio.h>
+#include <vector>
+#include <ctime>
 using namespace std;
 
-HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-int shipX = 57, shipY = 22; // Player spaceship position
-int enemyX = 0, enemyY = 0; // Enemy position
-int bulletX = 0, bulletY = 0; // Bullet position
-int score = 0, life = 5; // Game stats
-bool fired = false; // Bullet status
+// Constants for game settings
+const int width = 80;
+const int height = 20;
+const int maxEnemies = 10;
+const int maxBullets = 10;
 
-// Function declarations
-void HideCursor();
-void gotoxy(int x, int y);
-void setConsoleColor(int color);
-void drawBorder();
-void displayLivesAndScore();
-void WelcomeMessage();
-void playGame();
-void spaceship();
-void eraseSpaceship();
-void movement();
-void shoot();
-void enemy();
-
-int main() {
-    HideCursor();
-    WelcomeMessage();
-    return 0;
+// Function to set text color
+void setColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
 }
 
-void HideCursor() {
-    CONSOLE_CURSOR_INFO cursorInfo;
-    cursorInfo.dwSize = 1;
-    cursorInfo.bVisible = FALSE;
-    SetConsoleCursorInfo(hStdOut, &cursorInfo);
-}
-
+// Function to move the cursor to a specific position in the console
 void gotoxy(int x, int y) {
-    COORD pos = {SHORT(x), SHORT(y)};
-    SetConsoleCursorPosition(hStdOut, pos);
+    COORD coord;
+    coord.X = x;
+    coord.Y = y;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
 
-void setConsoleColor(int color) {
-    SetConsoleTextAttribute(hStdOut, color);
+// Function to play sound
+void playBeep(int freq, int dur) {
+    Beep(freq, dur);
 }
 
-void WelcomeMessage() {
-    system("cls");
-    gotoxy(13, 6);
-    setConsoleColor(11); // Light cyan color for welcome screen
-    cout << " _____                    _____ _           _           \n"
-         << "|   __|___ ___ ___ ___   |   __| |_ ___ ___| |_ ___ ___ \n"
-         << "|__   | -_|  _|  _| -_|  |__   |  _| -_|  _|  _| -_|  _|\n"
-         << "|_____|___|___|___|___|  |_____|_| |___|___|_| |___|_|  \n"
-         << "      |_|                                            \n";
-    cout << "Welcome to Space Shooter!" << endl;
-    cout << "Press '1' to play game\n";
-    cout << "Press '2' for instructions\n";
-    cout << "Press '0' to exit game\n";
-    
-    
-    char ch = _getch();
-    switch (ch) {
-        case '1':
-            playGame();
-            break;
-        case '2':
-            setConsoleColor(14); // Yellow for instructions
-            cout << "Instructions:\n"
-                 << "(1) Use left arrow key to move the spaceship left.\n"
-                 << "(2) Use right arrow key to move the spaceship right.\n"
-                 << "(3) Press space to shoot.\n"
-                 << "Press '1' to play game or '0' to exit.\n";
-            ch = _getch();
-            if (ch == '1') {
-                playGame();
-            } else if (ch == '0') {
-                exit(0);
-            }
-            break;
-        case '0':
-            exit(0);
-            break;
-    }
-}
-
-void playGame() {
-    system("cls");
-    drawBorder();
-    displayLivesAndScore();
-    spaceship();
-    while (true) {
-        if (_kbhit()) {
-            movement();
-        }
-        if (fired) {
-            shoot();
-        }
-        enemy();
-        Sleep(50); // Slow down the game loop
-    }
-}
+// Game elements
+int playerX, playerY;
+int playerLives = 5;
+int playerScore = 0;
+int enemiesX[maxEnemies], enemiesY[maxEnemies], enemiesActive[maxEnemies];
+int bulletsX[maxBullets], bulletsY[maxBullets], bulletsActive[maxBullets];
 
 void drawBorder() {
-    setConsoleColor(10); // Green color for the border
-    for (int i = 0; i < 100; i++) { // Top border
-        gotoxy(10 + i, 0);
-        cout << "-";
+    setColor(7);
+    for (int i = 0; i < width; i++) {
+        gotoxy(i, 0); std::cout << "=";
+        gotoxy(i, height); std::cout << "=";
     }
-    for (int i = 0; i < 25; i++) { // Side borders
-        gotoxy(10, i);
-        cout << "|";
-        gotoxy(109, i);
-        cout << "|";
-    }
-    for (int i = 0; i < 100; i++) { // Bottom border
-        gotoxy(10 + i, 25);
-        cout << "-";
-    }
-    setConsoleColor(7); // Reset to white for gameplay
-}
-
-void displayLivesAndScore() {
-    gotoxy(15, 1);
-    cout << "Lives: ";
-    for (int i = 0; i < life; i++) {
-        cout << char(254) << " "; // Display lives using block characters
-    }
-    gotoxy(100, 1);
-    cout << "Score: " << score;
-}
-
-void spaceship() {
-    setConsoleColor(15); // Bright white for spaceship
-    gotoxy(shipX, shipY);
-    cout << " ^ ";
-    gotoxy(shipX, shipY + 1);
-    cout << "<#>";
-    gotoxy(shipX, shipY + 2);
-    cout << "H H";
-}
-
-void eraseSpaceship() {
-    for (int i = 0; i < 3; i++) {
-        gotoxy(shipX, shipY + i);
-        cout << "   ";
+    for (int i = 1; i < height; i++) {
+        gotoxy(0, i); std::cout << "|";
+        gotoxy(width - 1, i); std::cout << "|";
     }
 }
 
-void movement() {
-    char ch = _getch();
-    if (ch == 75 && shipX > 13) { // Left arrow
-        eraseSpaceship();
-        shipX -= 2;
-        spaceship();
-    } else if (ch == 77 && shipX < 106) { // Right arrow
-        eraseSpaceship();
-        shipX += 2;
-        spaceship();
-    } else if (ch == ' ') { // Spacebar to shoot
-        bulletX = shipX + 1; // Bullet starts in the middle of the spaceship
-        bulletY = shipY - 1;
-        fired = true;
+void updateInfoPanel() {
+    gotoxy(1, height + 1);
+    std::cout << "Lives: " << playerLives << " Score: " << playerScore;
+}
+
+void drawPlayer() {
+    gotoxy(playerX, playerY);
+    setColor(14); // Yellow
+    std::cout << ">";
+}
+
+void erasePlayer() {
+    gotoxy(playerX, playerY);
+    std::cout << " ";
+}
+
+void movePlayer(int dx) {
+    erasePlayer();
+    playerX += dx;
+    if (playerX < 1) playerX = 1;
+    if (playerX > width - 2) playerX = width - 2;
+    drawPlayer();
+}
+
+void drawEnemy(int index) {
+    gotoxy(enemiesX[index], enemiesY[index]);
+    setColor(12); // Red
+    std::cout << "X";
+}
+
+void eraseEnemy(int index) {
+    gotoxy(enemiesX[index], enemiesY[index]);
+    std::cout << " ";
+}
+
+void updateEnemies() {
+    for (int i = 0; i < maxEnemies; i++) {
+        if (enemiesActive[i]) {
+            eraseEnemy(i);
+            enemiesY[i]++;
+            if (enemiesY[i] >= height) {
+                enemiesActive[i] = 0;
+            }
+            else {
+                drawEnemy(i);
+                if (enemiesX[i] == playerX && enemiesY[i] == playerY) {
+                    playerLives--;
+                    drawPlayer();
+                    playBeep(300, 300);
+                    enemiesActive[i] = 0;
+                }
+            }
+        }
     }
 }
 
-void shoot() {
-    setConsoleColor(12); // Red for bullet
-    if (bulletY > 0) {
-        gotoxy(bulletX, bulletY);
-        cout << "|";
-        gotoxy(bulletX, bulletY + 1);
-        cout << " ";
-        bulletY--;
-    } else {
-        fired = false; // Bullet has reached the top
-    }
-    setConsoleColor(7); // Reset to white for gameplay
+void drawBullet(int index) {
+    gotoxy(bulletsX[index], bulletsY[index]);
+    setColor(15); // White
+    std::cout << ".";
 }
 
-void enemy() {
-    setConsoleColor(13); // Purple for enemy
-    if (enemyY == 0) {
-        srand(time(NULL));
-        enemyX = (rand() % 95) + 11; // Enemy appears within borders
-        enemyY = 1; // Start just below the top border
+void eraseBullet(int index) {
+    gotoxy(bulletsX[index], bulletsY[index]);
+    std::cout << " ";
+}
+
+void updateBullets() {
+    for (int i = 0; i < maxBullets; i++) {
+        if (bulletsActive[i]) {
+            eraseBullet(i); // Erase bullet from the previous position
+            bulletsY[i]--;
+            if (bulletsY[i] <= 0) {
+                bulletsActive[i] = 0; // Deactivate bullet if it goes off-screen
+            }
+            else {
+                drawBullet(i); // Redraw bullet at new position
+                for (int j = 0; j < maxEnemies; j++) {
+                    if (enemiesActive[j] && bulletsX[i] == enemiesX[j] && bulletsY[i] == enemiesY[j]) {
+                        bulletsActive[i] = 0; // Deactivate the bullet
+                        enemiesActive[j] = 0; // Deactivate the enemy hit by the bullet
+                        playerScore += 10;
+                        playBeep(1000, 50);
+                        eraseBullet(i); // Erase the bullet immediately after a hit
+                        break; // Break out of the loop once the bullet hits an enemy
+                    }
+                }
+            }
+        }
     }
-    gotoxy(enemyX, enemyY);
-    cout << " ";
-    enemyY++;
-    if (enemyY < 25) {
-        gotoxy(enemyX, enemyY);
-        cout << char(15);
-    } else {
-        enemyY = 0; // Reset enemy position if it reaches the bottom
+}
+
+
+void addBullet() {
+    for (int i = 0; i < maxBullets; i++) {
+        if (!bulletsActive[i]) {
+            bulletsX[i] = playerX + 1;
+            bulletsY[i] = playerY;
+            bulletsActive[i] = 1;
+            playBeep(700, 30);
+            drawBullet(i);
+            break;
+        }
     }
-    setConsoleColor(7); // Reset to white for gameplay
+}
+
+void addEnemy() {
+    for (int i = 0; i < maxEnemies; i++) {
+        if (!enemiesActive[i]) {
+            enemiesX[i] = rand() % (width - 2) + 1;
+            enemiesY[i] = 1;
+            enemiesActive[i] = 1;
+            drawEnemy(i);
+            break;
+        }
+    }
+}
+
+void resetGame() {
+    playerX = width / 2; // Center the player horizontally
+    playerY = height - 2; // Position player at the bottom
+    playerLives = 5; // Reset lives
+    playerScore = 0; // Reset score
+    memset(enemiesActive, 0, sizeof(enemiesActive)); // Deactivate all enemies
+    memset(bulletsActive, 0, sizeof(bulletsActive)); // Deactivate all bullets
+
+    // Optionally, reset the positions of enemies and bullets if needed
+    for (int i = 0; i < maxEnemies; i++) {
+        enemiesY[i] = 0; // Reset enemy Y positions if needed
+    }
+    for (int i = 0; i < maxBullets; i++) {
+        bulletsY[i] = 0; // Reset bullet Y positions if needed
+    }
+}
+
+void gameLoop() {
+    resetGame();
+    playerX = width / 2;
+    playerY = height - 2;
+    memset(enemiesActive, 0, sizeof(enemiesActive));
+    memset(bulletsActive, 0, sizeof(bulletsActive));
+
+    drawBorder();
+    drawPlayer();
+    updateInfoPanel();
+
+    bool quit = false;
+    while (!quit && playerLives > 0) {
+        if (_kbhit()) {
+            char ch = _getch();
+            switch (ch) {
+            case 'a': // Move left
+                movePlayer(-1);
+                break;
+            case 'd': // Move right
+                movePlayer(1);
+                break;
+            case ' ': // Fire a bullet
+                addBullet();
+                break;
+            case 'q': // Quit the game
+                quit = true;
+                break;
+            }
+        }
+
+        updateBullets();
+        updateEnemies();
+
+        if (rand() % 20 == 0) {
+            addEnemy();
+        }
+
+        updateInfoPanel();
+        Sleep(100);
+    }
+
+    gotoxy(width / 4, height / 2);
+    std::cout << "Game Over! Score: " << playerScore;
+    Sleep(3000); // Display the end screen for 3 seconds
+}
+
+void displayMenu() {
+    setColor(11);
+   
+    cout << "                                    _____                    _____ _           _           \n"
+         << "                                   |   __|___ ___ ___ ___   |   __| |_ ___ ___| |_ ___ ___ \n"
+         << "                                   |__   | - |  _|  _| -_|  |__   |  _| - | - |  _| - |  _|\n"
+         << "                                   |_____|___|___|___|___|  |_____|_| |___|___|_| |___|_|  \n"
+         << "                                         |_|                                            \n";
+
+    cout << "\n\n                                              Welcome to Space Shooter!" << endl;
+    cout << "                                              Press '1' to play game\n";
+    cout << "                                              Press '2' for instructions\n";
+    cout << "                                              Press '0' to exit game\n";
+    std::cout << "Select an option: ";
+    int choice;
+    std::cin >> choice;
+
+    switch (choice) {
+    case 1:
+        system("cls");
+        gameLoop();
+        break;
+    case 2:
+        exit(0);
+    }
+}
+
+int main() {
+    srand(static_cast<unsigned int>(time(0))); // Seed the random number generator
+    while (true) {
+        system("cls");
+        displayMenu();
+    }
+    return 0;
 }

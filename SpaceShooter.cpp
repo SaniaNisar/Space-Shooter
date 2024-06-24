@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <windows.h>
 #include <conio.h>
 #include <vector>
@@ -10,6 +11,18 @@ const int width = 80;
 const int height = 20;
 const int maxEnemies = 10;
 const int maxBullets = 10;
+
+HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+void HideCursor();
+void gotoxy(int x, int y);
+
+void HideCursor() {
+    CONSOLE_CURSOR_INFO cursorInfo;
+    cursorInfo.dwSize = 1;
+    cursorInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(hStdOut, &cursorInfo);
+}
 
 // Function to set text color
 void setColor(int color) {
@@ -31,10 +44,35 @@ void playBeep(int freq, int dur) {
 
 // Game elements
 int playerX, playerY;
+int highestScore = 0; // Add highest score variable
 int playerLives = 5;
 int playerScore = 0;
 int enemiesX[maxEnemies], enemiesY[maxEnemies], enemiesActive[maxEnemies];
 int bulletsX[maxBullets], bulletsY[maxBullets], bulletsActive[maxBullets];
+
+// Function to load the highest score from a file
+int loadHighestScore() {
+    FILE* file;
+    errno_t err = fopen_s(&file, "highest_score.txt", "r");
+    if (err != 0 || file == nullptr) {
+        return 0; // Return 0 if the file doesn't exist or can't be opened
+    }
+    int score;
+    fscanf_s(file, "%d", &score);
+    fclose(file);
+    return score;
+}
+
+// Function to save the highest score to a file
+void saveHighestScore(int score) {
+    FILE* file;
+    errno_t err = fopen_s(&file, "highest_score.txt", "w");
+    if (err != 0 || file == nullptr) {
+        return; // Exit the function if the file can't be opened
+    }
+    fprintf(file, "%d", score);
+    fclose(file);
+}
 
 void drawBorder() {
     setColor(7);
@@ -50,7 +88,7 @@ void drawBorder() {
 
 void updateInfoPanel() {
     gotoxy(1, height + 1);
-    std::cout << "Lives: " << playerLives << " Score: " << playerScore;
+    std::cout << "Lives: " << playerLives << " Score: " << playerScore << " Highest Score: " << highestScore;
 }
 
 void drawPlayer() {
@@ -225,6 +263,12 @@ void gameLoop() {
         Sleep(100);
     }
 
+    // Update the highest score if needed
+    if (playerScore > highestScore) {
+        highestScore = playerScore;
+        saveHighestScore(highestScore);
+    }
+
     gotoxy(width / 4, height / 2);
     std::cout << "Game Over! Score: " << playerScore;
     Sleep(3000); // Display the end screen for 3 seconds
@@ -232,12 +276,12 @@ void gameLoop() {
 
 void displayMenu() {
     setColor(11);
-   
-    cout << "                                    _____                    _____ _           _           \n"
-         << "                                   |   __|___ ___ ___ ___   |   __| |_ ___ ___| |_ ___ ___ \n"
-         << "                                   |__   | - |  _|  _| -_|  |__   |  _| - | - |  _| - |  _|\n"
-         << "                                   |_____|___|___|___|___|  |_____|_| |___|___|_| |___|_|  \n"
-         << "                                         |_|                                            \n";
+    gotoxy(13, 6);
+    cout << "                       _____                    _____ _           _           \n"
+        << "                                   |   __|___ ___ ___ ___   |   __| |_ ___ ___| |_ ___ ___ \n"
+        << "                                   |__   | - |  _|  _| -_|  |__   |  _| - | - |  _| - |  _|\n"
+        << "                                   |_____|___|___|___|___|  |_____|_| |___|___|_| |___|_|  \n"
+        << "                                         |_|                                            \n";
 
     cout << "\n\n                                              Welcome to Space Shooter!" << endl;
     cout << "                                              Press '1' to play game\n";
@@ -253,12 +297,39 @@ void displayMenu() {
         gameLoop();
         break;
     case 2:
+        system("cls");
+        setColor(14); // Yellow for instructions
+        cout << "Instructions:\n"
+            << "(1) Use A key to move the spaceship left.\n"
+            << "(2) Use D arrow key to move the spaceship right.\n"
+            << "(3) Press space to shoot.\n"
+            << "Press '1' to play game or '0' to exit.\n";
+        cin >> choice;
+        if (choice == 1) {
+            system("cls");
+            gameLoop();
+            break;
+        }
+        else if (choice == 0) {
+            system("cls");
+            cout << "You're on your way out Bye Byee Astronaut!!!\n\n\n\n";
+            exit(0);
+            break;
+        }
+        break;
+    case 0:
+        system("cls");
+        setColor(14);
+        cout << "You're on your way out Bye Byee Astronaut!!!\n\n\n\n\n";
         exit(0);
+        break;
     }
+
 }
 
 int main() {
     srand(static_cast<unsigned int>(time(0))); // Seed the random number generator
+    highestScore = loadHighestScore(); // Load the highest score at the start
     while (true) {
         system("cls");
         displayMenu();

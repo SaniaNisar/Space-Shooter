@@ -26,16 +26,11 @@ Access a help section from the main menu, offering clear instructions on how to 
 
 ## Technical Stack and Libraries:
 
-### 🖥️ Windows.h: 
-Leverages advanced Windows console functionalities to control screen buffers, handle inputs, and manipulate console outputs.
-
-### ⏲️ Ctime: 
-Utilizes time functions for seeding random enemy spawns, adding unpredictability to each game session.
-
-### 🔍 Conio.h: 
-Provides console input/output functions like _getch() for reading keystrokes instantly, adding responsiveness to your spaceship's controls.
-
-
+#### 🖥️ Windows.h
+#### ⏲️ Ctime
+#### 🔍 Conio.h
+#### 📁 Fstream
+#### 🧮 Vector
 
 ## Why Play This Game?
 

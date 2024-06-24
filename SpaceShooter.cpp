@@ -77,29 +77,33 @@ void saveHighestScore(int score) {
 void drawBorder() {
     setColor(7);
     for (int i = 0; i < width; i++) {
-        gotoxy(i, 0); std::cout << "=";
-        gotoxy(i, height); std::cout << "=";
+        gotoxy(i, 0); cout << "=";
+        gotoxy(i, height); cout << "=";
     }
     for (int i = 1; i < height; i++) {
-        gotoxy(0, i); std::cout << "|";
-        gotoxy(width - 1, i); std::cout << "|";
+        gotoxy(0, i); cout << "|";
+        gotoxy(width - 1, i); cout << "|";
     }
 }
 
 void updateInfoPanel() {
-    gotoxy(1, height + 1);
-    std::cout << "Lives: " << playerLives << " Score: " << playerScore << " Highest Score: " << highestScore;
+    gotoxy(width + 2, 9);
+    cout << "   Lives: " << playerLives;
+    gotoxy(width + 2, 10);
+    cout << "   Score: " << playerScore;
+    gotoxy(width + 2, 11);
+    cout << "   Highest Score: " << highestScore;
 }
 
 void drawPlayer() {
     gotoxy(playerX, playerY);
     setColor(14); // Yellow
-    std::cout << ">";
+    cout << ">";
 }
 
 void erasePlayer() {
     gotoxy(playerX, playerY);
-    std::cout << " ";
+    cout << " ";
 }
 
 void movePlayer(int dx) {
@@ -113,12 +117,12 @@ void movePlayer(int dx) {
 void drawEnemy(int index) {
     gotoxy(enemiesX[index], enemiesY[index]);
     setColor(12); // Red
-    std::cout << "X";
+    cout << "X";
 }
 
 void eraseEnemy(int index) {
     gotoxy(enemiesX[index], enemiesY[index]);
-    std::cout << " ";
+    cout << " ";
 }
 
 void updateEnemies() {
@@ -145,12 +149,12 @@ void updateEnemies() {
 void drawBullet(int index) {
     gotoxy(bulletsX[index], bulletsY[index]);
     setColor(15); // White
-    std::cout << ".";
+    cout << ".";
 }
 
 void eraseBullet(int index) {
     gotoxy(bulletsX[index], bulletsY[index]);
-    std::cout << " ";
+    cout << " ";
 }
 
 void updateBullets() {
@@ -269,8 +273,8 @@ void gameLoop() {
         saveHighestScore(highestScore);
     }
 
-    gotoxy(width / 4, height / 2);
-    std::cout << "Game Over! Score: " << playerScore;
+    gotoxy(width / 3, height / 2);
+    cout << "Game Over! Score: " << playerScore;
     Sleep(3000); // Display the end screen for 3 seconds
 }
 
@@ -287,9 +291,9 @@ void displayMenu() {
     cout << "                                              Press '1' to play game\n";
     cout << "                                              Press '2' for instructions\n";
     cout << "                                              Press '0' to exit game\n";
-    std::cout << "Select an option: ";
+    cout << "                                              Select an option: ";
     int choice;
-    std::cin >> choice;
+    cin >> choice;
 
     switch (choice) {
     case 1:
@@ -298,12 +302,13 @@ void displayMenu() {
         break;
     case 2:
         system("cls");
-        setColor(14); // Yellow for instructions
-        cout << "Instructions:\n"
-            << "(1) Use A key to move the spaceship left.\n"
-            << "(2) Use D arrow key to move the spaceship right.\n"
-            << "(3) Press space to shoot.\n"
-            << "Press '1' to play game or '0' to exit.\n";
+        setColor(9); // Yellow for instructions
+        cout << " \n\n\n\n\n\n\n\n                                                    Instructions:\n"
+            << "                                       (1) Use A key to move the spaceship left.\n"
+            << "                                       (2) Use D arrow key to move the spaceship right.\n"
+            << "                                       (3) Press space to shoot.\n"
+            << "                                       (4) Press Q to quit.\n"
+            << "                                       Press '1' to play game or anyother key to exit:  ";
         cin >> choice;
         if (choice == 1) {
             system("cls");
@@ -312,7 +317,7 @@ void displayMenu() {
         }
         else if (choice == 0) {
             system("cls");
-            cout << "You're on your way out Bye Byee Astronaut!!!\n\n\n\n";
+            cout << "\n\n\n\n\n\n\n\n                                You're on your way out Bye Byee Astronaut!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
             exit(0);
             break;
         }
@@ -320,7 +325,7 @@ void displayMenu() {
     case 0:
         system("cls");
         setColor(14);
-        cout << "You're on your way out Bye Byee Astronaut!!!\n\n\n\n\n";
+        cout << "\n\n\n\n\n\n\n\n                                You're on your way out Bye Byee Astronaut!!!\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
         exit(0);
         break;
     }
@@ -332,6 +337,7 @@ int main() {
     highestScore = loadHighestScore(); // Load the highest score at the start
     while (true) {
         system("cls");
+        HideCursor();
         displayMenu();
     }
     return 0;
